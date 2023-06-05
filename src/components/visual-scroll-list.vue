@@ -1,49 +1,17 @@
-<script lang="ts">
-import { PropType, defineComponent, h } from 'vue';
-import { initSlots } from '../core/renderHelper';
+<template>
+  <div class="scroll-container">
+    <div class="scroll-wraper">
+      <slot v-for="(item, index) in list" name="item" v-bind="{ item, index }">
+      </slot>
+    </div>
+  </div>
+</template>
+<script setup lang="ts">
+import { PropType } from "vue";
 
-export default defineComponent({
-  name: "visual-scroll-list",
-  inheritAttrs: false,
-  props: {
-    list: {
-      type: Array as PropType<any[]>,
-      required: false,
-      default: null,
-    },
-    itemKey: {
-      type: [String, Function],
-      required: true,
-    },
+const props = defineProps({
+  list: {
+    type: Array as PropType<any[]>,
   },
-  data() {
-    return {
-      error: false
-    }
-  },
-  computed: {
-    realList() {
-      const { list } = this;
-      return list
-    },
-    getKey() {
-      const { itemKey } = this;
-      if (typeof itemKey === "function") {
-        return itemKey;
-      }
-      return (element: any) => element[itemKey as string];
-    }
-  },
-  render() {
-    try {
-      this.error = false
-      const { $slots, realList, getKey } = this
-      const nodes = initSlots($slots, realList, getKey)
-      console.log(nodes)
-      return h('div', {}, nodes)
-    } catch (err) {
-      return h("pre", { style: {color: 'red'}}, (err as Error).stack)
-    }
-  }
 });
 </script>
