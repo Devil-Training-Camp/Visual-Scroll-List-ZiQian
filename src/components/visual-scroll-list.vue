@@ -1,5 +1,4 @@
 <template>
-  <span>开始{{ renderStart }}结束{{ renderEnd }}</span>
   <div
     class="scroll-container"
     :style="{
@@ -9,7 +8,11 @@
     }"
     ref="scrollContainerRef"
   >
-    <div class="scroll-wrapper" ref="scrollWrapperRef" :style="{height: wrapperHeight +'px'}">
+    <div
+      class="scroll-wrapper"
+      ref="scrollWrapperRef"
+      :style="{ height: wrapperHeight + 'px' }"
+    >
       <div
         class="display-wrapper"
         :style="{
@@ -39,11 +42,11 @@ import {
   onUnmounted,
   ref,
 } from "vue";
-
+const emit = defineEmits(["scroll-end"]);
 const props = defineProps({
   list: {
     type: Array as PropType<any[]>,
-    required: true
+    required: true,
   },
   itemKey: {
     type: String,
@@ -57,19 +60,23 @@ const props = defineProps({
     type: String,
     default: "100%",
   },
+  isGetting: {
+    type: Boolean,
+    default: false,
+  },
 });
 let scrollTop = ref(0);
 let renderStart = ref(0);
 let renderEnd = ref(1);
 let childrenRect: Ref<DOMRect | undefined> = ref();
 let boxRect: Ref<DOMRect | undefined> = ref();
-let wrapperHeight = ref(0)
+let wrapperHeight = ref(0);
 const scrollWrapperRef = ref<HTMLDivElement>();
 const scrollContainerRef = ref<HTMLDivElement>();
 const list = computed(() => {
   const start = renderStart.value;
   const end = renderEnd.value;
-  return props.list?.slice(start, end);
+  return props.list?.slice(start, end + 1);
 });
 const scrollWrapperHeight = computed(() => {
   return scrollTop.value + "px";
@@ -85,21 +92,24 @@ async function singleRect() {
   boxRect.value = scrollContainerRef.value.getBoundingClientRect();
   const element = wrapperEle.children[renderStart.value];
   childrenRect.value = element.getBoundingClientRect();
-  wrapperHeight.value = childrenRect.value.height * props.list?.length
+  wrapperHeight.value = childrenRect.value.height * props.list?.length;
   handleOnScroll();
   calcRenderCount();
 }
 function calcRenderCount() {
-  const scrollHeight = parseInt(scrollTop.value + '')
-  const boxRefVal = boxRect.value
-  const childrenRefVal = childrenRect.value
+  const scrollHeight = parseInt(scrollTop.value + "");
+  const boxRefVal = boxRect.value;
+  const childrenRefVal = childrenRect.value;
   if (!boxRefVal || !childrenRefVal) return;
- 
+
   const renderCount = Math.ceil(
-    Number(boxRefVal.height ) / childrenRefVal.height
+    Number(boxRefVal.height) / childrenRefVal.height
   );
-  renderStart.value = Math.floor(scrollHeight / childrenRefVal.height)
+  renderStart.value = Math.floor(scrollHeight / childrenRefVal.height);
   renderEnd.value = renderStart.value + renderCount;
+  if (renderEnd.value >= props.list.length) {
+    scrollEnd();
+  }
 }
 function initScrollEvent() {
   if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
@@ -110,7 +120,8 @@ function initScrollEvent() {
 function handleOnScroll() {
   if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
   const boxEle = scrollContainerRef.value;
-  console.log(boxEle);
+  // console.log(boxEle);
+  if (props.isGetting) return;
   scrollTop.value = boxEle.scrollTop;
   calcRenderCount();
 }
@@ -118,6 +129,9 @@ function removeEvent() {
   if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
   const boxEle = scrollContainerRef.value;
   boxEle.removeEventListener("scroll", handleOnScroll);
+}
+function scrollEnd() {
+  emit("scroll-end");
 }
 onUnmounted(() => {
   removeEvent();

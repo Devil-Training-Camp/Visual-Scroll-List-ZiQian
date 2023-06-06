@@ -1,29 +1,48 @@
-
-
 <template>
   <div class="container">
-    <visualScrollList :list="mockData" :item-key="'key'">
-      <template #item="{item, index}">
-        <div :key="index">{{item.data}}</div>
+    <visualScrollList :list="mockData" :item-key="'key'" @scroll-end="handleOnScrollEnd" :isGetting="isGetting">
+      <template #item="{ item, index }">
+        <div>
+          <div :key="index">{{ item.data }}</div>
+          <div v-show="item.msg" :key="index">{{ item.msg }}</div>
+        </div>
       </template>
     </visualScrollList>
   </div>
 </template>
 
 <script setup lang="ts">
-import visualScrollList from "./components/visual-scroll-list.vue"
-
-const mockData = (function () {
-  let ret:{key: string, data: string}[] = []
-  let count = 10000
-  while(count--) {
+import { ref } from 'vue'
+import visualScrollList from "./components/visual-scroll-list.vue";
+type Data = { key: string; data: string; msg: string }[]
+let mockData:Data;
+const isGetting = ref(false)
+function genData (len: number) {
+  let ret: { key: string; data: string; msg: string }[] = [];
+  let count = 24+len;
+  while (count--) {
     ret.push({
       data: `第${count}数据`,
-      key: 'index_'+count
-    })
+      key: "index_" + count,
+      msg: count % 2 ? "msg_" + count : '',
+    });
   }
-  return ret
-})()
+  return ret;
+}
+mockData = genData(0)
+async function mockGetData(len: number) {
+  isGetting.value = true
+  return new Promise<Data>((resolve)=>{
+    const time = setTimeout(()=>{
+      isGetting.value = false
+      resolve(genData(len))
+      clearTimeout(time)
+    }, 3000)
+  })
+}
+async function handleOnScrollEnd() {  
+  mockData.push(...await mockGetData(mockData.length))
+}
 </script>
 
 <style scoped>
