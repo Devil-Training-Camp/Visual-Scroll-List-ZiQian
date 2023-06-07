@@ -4,7 +4,7 @@
       <template #item="{ item, index }">
         <div>
           <div :key="index">{{ item.data }}</div>
-          <div v-show="item.msg" :key="index">{{ item.msg }}</div>
+          <!-- <div v-show="item.msg" :key="index">{{ item.msg }}</div> -->
         </div>
       </template>
     </visualScrollList>
@@ -19,7 +19,7 @@ let mockData:Data;
 const isGetting = ref(false)
 function genData (len: number) {
   let ret: { key: string; data: string; msg: string }[] = [];
-  let count = 24+len;
+  let count = 10000 * len;
   while (count--) {
     ret.push({
       data: `第${count}数据`,
@@ -29,7 +29,7 @@ function genData (len: number) {
   }
   return ret;
 }
-mockData = genData(0)
+mockData = genData(1000)
 async function mockGetData(len: number) {
   isGetting.value = true
   return new Promise<Data>((resolve)=>{

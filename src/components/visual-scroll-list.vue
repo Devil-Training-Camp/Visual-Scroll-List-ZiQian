@@ -1,48 +1,28 @@
 <template>
   <div
     class="scroll-container"
-    :style="{
-      height: height,
-      width: width,
-      overflow: 'scroll',
-    }"
+    :style="{ height, width }"
     ref="scrollContainerRef"
   >
-    <div
-      class="scroll-wrapper"
-      ref="scrollWrapperRef"
-      :style="{ height: wrapperHeight + 'px' }"
-    >
+    <div class="phantomContent" :style="{ height: wrapperHeight + 'px' }">
       <div
-        class="display-wrapper"
+        class="scroll-wrapper"
         :style="{
-          position: 'absolute',
-          top: scrollWrapperHeight,
-          left: 0,
+          height: wrapperHeight + 'px',
+          transform: wrapperScrollTransform,
         }"
+        ref="scrollWrapperRef"
       >
-        <slot
-          v-for="(item, index) in list"
-          name="item"
-          v-bind="{ item, index }"
-          :key="item[itemKey]"
-        >
-        </slot>
+        <div v-for="(item, index) in list" :key="item[itemKey]">
+          <slot name="item" v-bind="{ item, index }"> </slot>
+        </div>
       </div>
     </div>
   </div>
 </template>
 <script setup lang="ts">
-import {
-  PropType,
-  Ref,
-  computed,
-  nextTick,
-  onMounted,
-  onUnmounted,
-  ref,
-} from "vue";
-const emit = defineEmits(["scroll-end"]);
+import { PropType, computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+// const emit = defineEmits(["scroll-end"]);
 const props = defineProps({
   list: {
     type: Array as PropType<any[]>,
@@ -64,81 +44,110 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  bufferSize: {
+    type: Number,
+    default: 28,
+  },
 });
-let scrollTop = ref(0);
-let renderStart = ref(0);
-let renderEnd = ref(1);
-let childrenRect: Ref<DOMRect | undefined> = ref();
-let boxRect: Ref<DOMRect | undefined> = ref();
-let wrapperHeight = ref(0);
-const scrollWrapperRef = ref<HTMLDivElement>();
+
+const rowHeight = ref(0);
+const scrollTop = ref(0);
+const startIndex = ref(0);
+const endIndex = ref(1);
+const viewCount = ref(1);
 const scrollContainerRef = ref<HTMLDivElement>();
+const scrollWrapperRef = ref<HTMLDivElement>();
+const containerRect = ref<DOMRect>();
+const wrapperScrollTransform = computed(() => {
+  return `translate3d(0, ${
+    scrollTop.value -
+    (scrollTop.value % rowHeight.value) -
+    Math.min(startIndex.value, props.bufferSize) * rowHeight.value
+  }px, 0)`;
+});
 const list = computed(() => {
-  const start = renderStart.value;
-  const end = renderEnd.value;
-  return props.list?.slice(start, end + 1);
+  const start = startIndex.value;
+  const end = endIndex.value;
+  return props.list.slice(start, end);
 });
-const scrollWrapperHeight = computed(() => {
-  return scrollTop.value + "px";
+const wrapperHeight = computed(() => {
+  return props.list.length * rowHeight.value;
 });
-onMounted(() => {
-  singleRect();
+onMounted(async () => {
+  await nextTick();
+  getViewData();
   initScrollEvent();
 });
-async function singleRect() {
-  if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
-  await nextTick();
-  const wrapperEle = scrollWrapperRef.value;
-  boxRect.value = scrollContainerRef.value.getBoundingClientRect();
-  const element = wrapperEle.children[renderStart.value];
-  childrenRect.value = element.getBoundingClientRect();
-  wrapperHeight.value = childrenRect.value.height * props.list?.length;
-  handleOnScroll();
-  calcRenderCount();
+onUnmounted(() => {
+  removeScrollEvent();
+});
+function getViewData() {
+  if (!scrollContainerRef.value) return;
+  rowHeight.value = getRowHeight();
+  containerRect.value = scrollContainerRef.value.getBoundingClientRect();
+  viewCount.value = Math.ceil(containerRect.value.height / rowHeight.value);
+  console.log(containerRect.value);
+  // 第一次渲染的数量
+  startIndex.value = 0;
+  endIndex.value = viewCount.value + props.bufferSize;
+  console.log(viewCount.value);
 }
-function calcRenderCount() {
-  const scrollHeight = parseInt(scrollTop.value + "");
-  const boxRefVal = boxRect.value;
-  const childrenRefVal = childrenRect.value;
-  if (!boxRefVal || !childrenRefVal) return;
+function getRowHeight() {
+  const wrapper = scrollWrapperRef.value;
+  const children = wrapper?.children[0];
+  const rect = children?.getBoundingClientRect();
+  return rect?.height || 0;
+}
 
-  const renderCount = Math.ceil(
-    Number(boxRefVal.height) / childrenRefVal.height
-  );
-  renderStart.value = Math.floor(scrollHeight / childrenRefVal.height);
-  renderEnd.value = renderStart.value + renderCount;
-  if (renderEnd.value >= props.list.length) {
-    scrollEnd();
+function calcRenderIndex() {
+  const total = props.list.length;
+  const currentStartIndex = Math.floor(scrollTop.value / rowHeight.value);
+  if (currentStartIndex !== startIndex.value) {
+    startIndex.value = Math.max(currentStartIndex - props.bufferSize, 0);
+    endIndex.value = Math.min(
+      currentStartIndex + viewCount.value + props.bufferSize,
+      total - 1
+    );
   }
+  console.log(startIndex.value, endIndex.value);
+}
+function handleOnScroll() {
+  const wrapper = scrollContainerRef.value;
+  calcRenderIndex();
+  scrollTop.value = wrapper?.scrollTop || 0;
 }
 function initScrollEvent() {
-  if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
-  const boxEle = scrollContainerRef.value;
-  boxEle.addEventListener("scroll", handleOnScroll);
+  const wrapper = scrollContainerRef.value;
+  wrapper?.addEventListener("scroll", handleOnScroll);
 }
-
-function handleOnScroll() {
-  if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
-  const boxEle = scrollContainerRef.value;
-  // console.log(boxEle);
-  if (props.isGetting) return;
-  scrollTop.value = boxEle.scrollTop;
-  calcRenderCount();
+function removeScrollEvent() {
+  const wrapper = scrollContainerRef.value;
+  wrapper?.removeEventListener("scroll", handleOnScroll);
 }
-function removeEvent() {
-  if (!scrollWrapperRef.value || !scrollContainerRef.value) return;
-  const boxEle = scrollContainerRef.value;
-  boxEle.removeEventListener("scroll", handleOnScroll);
+function getTransform() {
+  return `translate3d(0, ${
+    scrollTop.value -
+    (scrollTop.value % rowHeight.value) -
+    Math.min(startIndex.value, props.bufferSize) * rowHeight.value
+  })`;
 }
-function scrollEnd() {
-  emit("scroll-end");
-}
-onUnmounted(() => {
-  removeEvent();
-});
+// function getItemScrollStyle(index: number) {
+//   if (rowHeight.value <= 0) return undefined;
+//   return {
+//     width: "100%",
+//     height: rowHeight.value + "px",
+//     position: "absolute",
+//     left: 0,
+//     right: 0,
+//     top: (startIndex.value + index) * rowHeight.value + 'px',
+//   } as StyleValue;
+// }
 </script>
 <style scoped>
 .scroll-wrapper {
   position: relative;
+}
+.scroll-container {
+  overflow-y: auto;
 }
 </style>
