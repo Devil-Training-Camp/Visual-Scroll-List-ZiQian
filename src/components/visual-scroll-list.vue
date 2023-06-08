@@ -116,11 +116,9 @@ function getViewData() {
     : getRowHeight();
   containerRect.value = scrollContainerRef.value.getBoundingClientRect();
   viewCount.value = Math.ceil(containerRect.value.height / rowHeight.value);
-  console.log(containerRect.value);
   // 第一次渲染的数量
   startIndex.value = 0;
   endIndex.value = viewCount.value + props.bufferSize;
-  console.log(viewCount.value);
 }
 function getRowHeight() {
   const wrapper = scrollWrapperRef.value;
@@ -146,13 +144,8 @@ function calcRenderIndex() {
 }
 function handleOnScroll() {
   const wrapper = scrollContainerRef.value;
-  
   scrollTop.value = wrapper?.scrollTop || 0;
   calcRenderIndex();
-  console.log(scrollTop.value)
-  // nextTick(() => {
-  //   tupdateHeightCache();
-  // });
 }
 function handleMouseDown() {
   const wrapper = scrollContainerRef.value;

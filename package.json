@@ -1,14 +1,23 @@
 {
   "name": "visual-scroll-list-ziqian",
-  "private": true,
-  "version": "0.0.0",
+  "private": false,
+  "version": "0.0.1",
   "type": "module",
+  "main": "dist/index.js",
+  "browser": "dist/index.esm.js",
+  "umd:main": "dist/index.umd.js",
   "scripts": {
-    "test": "jest",
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview"
   },
+  "keywords": [
+    "visual-scroll",
+    "vue-component",
+    "vue3"
+  ],
+  "author": "xieziqian",
+  "description": "不定高的虚拟vue3滚动组件, 100W级别数据渲染",
   "dependencies": {
     "@better-scroll/core": "^2.5.1",
     "vue": "^3.2.47"
