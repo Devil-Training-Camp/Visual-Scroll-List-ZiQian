@@ -12,6 +12,7 @@
         class="scroll-wrapper"
         :style="{
           position: 'absolute',
+          width: '100%',
           height: wrapperHeight + 'px',
           transform: wrapperScrollTransform,
         }"
@@ -100,7 +101,7 @@ onMounted(async () => {
   initScrollEvent();
   nextTick(() => {
     initCacheHeight();
-    updateHeightCache();
+    // updateHeightCache();
   });
 });
 onUnmounted(() => {
@@ -109,6 +110,7 @@ onUnmounted(() => {
 function getViewData() {
   if (!scrollContainerRef.value) return;
   // 如果传入了对元素的预估高度，则直接使用此高度不进行计算
+  // 否则自动渲染一个元素，并获取元素高作为预估高度
   rowHeight.value = props.estimateHeight
     ? props.estimateHeight
     : getRowHeight();
@@ -144,19 +146,42 @@ function calcRenderIndex() {
 }
 function handleOnScroll() {
   const wrapper = scrollContainerRef.value;
-  calcRenderIndex();
+  
   scrollTop.value = wrapper?.scrollTop || 0;
-  nextTick(() => {
-    tupdateHeightCache();
-  });
+  calcRenderIndex();
+  console.log(scrollTop.value)
+  // nextTick(() => {
+  //   tupdateHeightCache();
+  // });
+}
+function handleMouseDown() {
+  const wrapper = scrollContainerRef.value;
+  // 鼠标按下时，添加 mousemove 和 mouseup 事件监听器
+  wrapper?.addEventListener('mousemove', handleMouseMove);
+  document.addEventListener('mouseup', handleMouseUp);
+}
+function handleMouseMove() {
+  const wrapper = scrollContainerRef.value;
+  handleOnScroll()
+  // 在这里处理鼠标移动时的逻辑，例如更新滚动条位置
+  wrapper?.removeEventListener("mousedown", handleMouseDown); // 移除 mousedown 事件监听器
+}
+function handleMouseUp() {
+  // 鼠标释放时，移除 mousemove 和 mouseup 事件监听器
+  document.removeEventListener('mousemove', handleMouseMove);
+  document.removeEventListener('mouseup', handleMouseUp);
 }
 function initScrollEvent() {
   const wrapper = scrollContainerRef.value;
   wrapper?.addEventListener("scroll", handleOnScroll);
+  wrapper?.addEventListener("mousedown", handleMouseDown); // 添加 mousedown 事件监听器
+  
 }
+
 function removeScrollEvent() {
   const wrapper = scrollContainerRef.value;
   wrapper?.removeEventListener("scroll", handleOnScroll);
+  wrapper?.removeEventListener("mousedown", handleMouseDown); // 移除 mousedown 事件监听器
 }
 function initCacheHeight() {
   const estimateHeight = rowHeight.value;
@@ -170,7 +195,8 @@ function initCacheHeight() {
     };
   }
 }
-const tupdateHeightCache = throttle(updateHeightCache, 100);
+
+// const tupdateHeightCache = throttle(updateHeightCache, 100);
 function updateHeightCache() {
   const wrapper = scrollWrapperRef.value;
   if (!wrapper) return;
@@ -207,7 +233,6 @@ function updateHeightCache() {
       item.dValue = 0;
     }
   }
-  console.log("update", heightCacheVal);
 }
 function getStartIndex(st = 0) {
   let idx = binarySearch<HeightCache, number>(
