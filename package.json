@@ -1,5 +1,5 @@
 {
-  "name": "visual-scroll-list-ziqian",
+  "name": "vue3-visual-scroll-list",
   "private": false,
   "version": "0.0.1",
   "type": "module",
@@ -18,11 +18,11 @@
   ],
   "author": "xieziqian",
   "description": "不定高的虚拟vue3滚动组件, 100W级别数据渲染",
-  "dependencies": {
-    "@better-scroll/core": "^2.5.1",
+  "peerDependencies": {
     "vue": "^3.2.47"
   },
   "devDependencies": {
+    "vite-plugin-dts": "^2.3.0",
     "@babel/core": "^7.22.1",
     "@babel/preset-env": "^7.22.4",
     "@babel/preset-typescript": "^7.21.5",
