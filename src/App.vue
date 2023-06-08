@@ -1,6 +1,6 @@
 <template>
   <div class="container">
-    <visualScrollList :list="mockData" :item-key="'key'" @scroll-end="handleOnScrollEnd" :isGetting="isGetting">
+    <visualScrollList  :list="mockData" :item-key="'key'" @scroll-end="handleOnScrollEnd" :isGetting="isGetting">
       <template #item="{ item, index }">
         <div :style="{height: item.height + 'px', background: item.color, width: '100%'}">
           <div :key="index">{{ item.data }}</div>
@@ -12,7 +12,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import visualScrollList from "./components/visual-scroll-list.vue";
+import visualScrollList from "../dist/index";
 type Data = { key: string; data: string; msg: string }[]
 let mockData:Data;
 const isGetting = ref(false)
